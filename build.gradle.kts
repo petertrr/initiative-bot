@@ -1,3 +1,8 @@
 plugins {
+}
 
+allprojects {
+    repositories {
+        mavenCentral()
+    }
 }

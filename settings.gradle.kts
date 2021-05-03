@@ -1,2 +1,3 @@
 rootProject.name = "initiative-bot"
-group = "io.github.petertrr.initbot"
+
+include("initiative-bot-core")
