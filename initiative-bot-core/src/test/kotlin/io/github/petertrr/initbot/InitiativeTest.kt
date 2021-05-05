@@ -15,9 +15,8 @@ class InitiativeTest {
 
     @Test
     fun `should add combatants and sort according to modifiers`() {
-        Mockito.`when`(random.nextInt(1, 20)).thenReturn(1)
-        Mockito.`when`(random.nextInt(1, 20)).thenReturn(3)
-        Mockito.`when`(random.nextInt(1, 20)).thenReturn(5)
+        Mockito.`when`(random.nextInt(1, 20))
+            .thenReturn(1, 3, 5)
         val initiative = Initiative(random = random)
 
         initiative.roll("Tom", 0)

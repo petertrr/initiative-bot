@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version Versions.kotlin
+    jacoco
     application
 }
 
@@ -11,7 +12,18 @@ dependencies {
     implementation("com.discord4j:discord4j-core:${Versions.discord4j}")
     implementation("io.github.microutils:kotlin-logging:2.0.5")
     implementation("org.slf4j:slf4j-simple:1.7.30")
+    testImplementation(kotlin("test-junit5"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${Versions.junit}")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${Versions.junit}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+jacoco {
+    toolVersion = "0.8.6"
 }
 
 application {
