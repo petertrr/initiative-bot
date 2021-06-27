@@ -66,7 +66,7 @@ class Initiative(
     internal fun roll(rollCommand: Roll): RollResult {
         val combatant = members.first { it.name == rollCommand.name }
         val roll = random.nextInt(1, 20)
-        combatant.currentInitiative = roll
+        combatant.currentInitiative = roll + combatant.baseModifier + rollCommand.modifier
         return RollResult(roll, combatant.baseModifier + rollCommand.modifier, combatant.name)
     }
 
@@ -96,7 +96,7 @@ class Initiative(
             members.forEach { it.getCurrentInitiativeSafe() }
             currentCombatantIdx.set(0)
         }
-        return if (currentCombatantIdx.get() < members.size - 1) {
+        return if (currentCombatantIdx.get() < members.size) {
             val idx = currentCombatantIdx.getAndIncrement()
             CountdownStarted(members[idx], countdown.seconds).also {
                 if (idx == members.size - 1) {
