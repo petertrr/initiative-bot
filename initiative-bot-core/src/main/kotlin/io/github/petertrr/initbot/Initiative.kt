@@ -13,21 +13,23 @@ class Initiative(
             return Failure(ex)
         }
         return when (command) {
+            Help -> help()
             Start -> start()
-            End -> TODO()
-            is Roll -> RollResult(roll(command.name, command.modifier), command.modifier)
+            End -> end()
+            is Add -> TODO()
             is Remove -> {
                 remove(command.name)
                 Success("Successfully removed ${command.name} from initiative")
             }
-            is Countdown -> {
-                CountdownStarted(command.seconds)
-            }
-//            Round -> round()
+            is Roll -> RollResult(roll(command.name, command.modifier), command.modifier)
+            is Countdown -> CountdownStarted(command.seconds)
+            Round -> TODO()  // round()
         }
     }
 
     fun isEmpty() = members.isEmpty()
+
+    private fun help() = Success("""Available commands: start, end, add, remove, round, roll, next. See README.md for details""")
 
     internal fun start() =
         if (isEmpty()) {
@@ -35,6 +37,14 @@ class Initiative(
             Success("Successfully started initiative")
         } else {
             Failure(IllegalStateException("Initiative already started, call `end` first"))
+        }
+
+    internal fun end() =
+        if (isEmpty()) {
+            Failure(IllegalStateException("Initiative is not started, call `start` first"))
+        } else {
+            members.clear()
+            Success("Initiative ended")
         }
 
     /**

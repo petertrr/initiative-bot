@@ -2,39 +2,42 @@ package io.github.petertrr.initbot
 
 import java.lang.IllegalArgumentException
 
-sealed class Command(val command: String) {
+sealed class Command(command: String) {
     companion object {
-        fun parse(rawCommand: String): Command {
-            return when {
-                rawCommand.equals("start", ignoreCase = true) -> Start
-                rawCommand.equals("end", ignoreCase = true) -> End
-//                rawCommand.equals("round", ignoreCase = true) -> Round
-                rawCommand.startsWith("roll", ignoreCase = true) -> {
-                    Roll.cmdRegex.find(rawCommand)?.groups?.let {
-                        Roll(it[2]!!.value, it[1]!!.value.toInt())
-                    } ?: throw IllegalArgumentException("Malformed roll command, should be `roll <modifier> [name]`")
-                }
-                rawCommand.startsWith("remove", ignoreCase = true) -> Remove(rawCommand.substringAfter("remove").trim())
+        fun parse(rawCommand: String, defaultName: String = "Fallback"): Command {
+            val parts = rawCommand.split(" ")
+            return when (parts.first().lowercase()) {
+                "start" -> Start
+                "end" -> End
+                "add" -> Add(parts.lastOrNull() ?: defaultName, parts[1].toInt())
+                "remove" -> Remove(parts.lastOrNull() ?: defaultName)
+                "round" -> Round
+                "roll" -> Roll(parts.getOrElse(2) { defaultName }, parts[1].toInt())
                 // todo: configurable countdown interval
-                rawCommand.equals("next", ignoreCase = true) -> Countdown(60)
+                "next" -> Countdown(60)
+                "help" -> Help
                 else -> throw IllegalArgumentException("Malformed roll command: `$rawCommand`")
             }
         }
     }
 }
 
+object Help : Command("help")
+
 object Start : Command("start")
 
 object End : Command("end")
 
-//object Round : Command("round")
+object Round : Command("round")
 
-class Roll(val name: String, val modifier: Int) : Command("roll") {
+data class Roll(val name: String, val modifier: Int) : Command("roll") {
     companion object {
         internal val cmdRegex = Regex("roll ([+\\-\\d]+)([\\s\\w]*)")
     }
 }
 
-class Remove(val name: String) : Command("remove")
+data class Add(val name: String, val baseModifier: Int) : Command("add")
 
-class Countdown(val seconds: Int) : Command("countdown")
+data class Remove(val name: String) : Command("remove")
+
+data class Countdown(val seconds: Int) : Command("countdown")
