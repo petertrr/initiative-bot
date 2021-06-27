@@ -11,7 +11,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:${Versions.coroutines}")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions:1.1.3")
     implementation("com.discord4j:discord4j-core:${Versions.discord4j}")
-    implementation("io.github.microutils:kotlin-logging:2.0.5")
+    implementation("io.github.microutils:kotlin-logging:2.0.8")
     implementation("org.slf4j:slf4j-simple:1.7.30")
     testImplementation(kotlin("test-junit5"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:${Versions.junit}")
