@@ -1,14 +1,21 @@
 package io.github.petertrr.initbot
 
+import io.github.petertrr.initbot.entities.Combatant
+import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
 class Initiative(
-    private val members: MutableMap<String, Int?> = mutableMapOf(),
+    internal val members: MutableList<Combatant> = Collections.synchronizedList(mutableListOf()),
     private val random: Random = Random.Default
 ) {
-    fun execute(rawCommand: String): CommandResult {
+    private val isInitiativeStarted = AtomicBoolean(false)
+    private val currentCombatantIdx = AtomicInteger(-1)
+
+    fun execute(rawCommand: String, fallbackName: String): CommandResult {
         val command = try {
-            Command.parse(rawCommand)
+            Command.parse(rawCommand, fallbackName)
         } catch (ex: Exception) {
             return Failure(ex)
         }
@@ -16,64 +23,98 @@ class Initiative(
             Help -> help()
             Start -> start()
             End -> end()
-            is Add -> TODO()
+            is Add -> add(command)
             is Remove -> {
-                remove(command.name)
+                removeByName(command.name)
                 Success("Successfully removed ${command.name} from initiative")
             }
-            is Roll -> RollResult(roll(command.name, command.modifier), command.modifier)
-            is Countdown -> CountdownStarted(command.seconds)
-            Round -> TODO()  // round()
+            is Roll -> roll(command)
+            is Countdown -> startCountdown(command)
+            Round -> round()
         }
     }
-
-    fun isEmpty() = members.isEmpty()
 
     private fun help() = Success("""Available commands: start, end, add, remove, round, roll, next. See README.md for details""")
 
     internal fun start() =
-        if (isEmpty()) {
+        if (isInitiativeStarted.compareAndSet(false, true)) {
             members.clear()
-            Success("Successfully started initiative")
+            Success("Successfully started initiative, combatants should call `add` now")
         } else {
             Failure(IllegalStateException("Initiative already started, call `end` first"))
         }
 
     internal fun end() =
-        if (isEmpty()) {
-            Failure(IllegalStateException("Initiative is not started, call `start` first"))
-        } else {
+        if (isInitiativeStarted.compareAndSet(true, false)) {
             members.clear()
             Success("Initiative ended")
+        } else {
+            Failure(IllegalStateException("Initiative is not started, call `start` first"))
         }
 
+    internal fun add(addCommand: Add): CommandResult {
+        require(isInitiativeStarted.get()) { "Initiative is not started, run `start` first" }
+        members.add(
+            Combatant(addCommand.name, addCommand.baseModifier, null)
+        )
+        return Success("Added ${addCommand.name} with base modifier ${addCommand.baseModifier} to the initiative")
+    }
+
     /**
-     * Add a combatant with [name] and [modifier]
-     *
      * @return a rolled value
      */
-    internal fun roll(name: String, modifier: Int): Int {
+    internal fun roll(rollCommand: Roll): RollResult {
+        val combatant = members.first { it.name == rollCommand.name }
         val roll = random.nextInt(1, 20)
-        members[name] = roll + modifier
-        return roll
+        combatant.currentInitiative = roll
+        return RollResult(roll, combatant.baseModifier + rollCommand.modifier, combatant.name)
     }
 
     /**
      * Returns a sequence of this round combatants, sorted by their initiative
      */
-    internal fun round() = members.keys
-        .sortedBy {
-            requireNotNull(members[it]) { "Combatant $it has unset initiative, but new round has been requested" }
-            members[it]!!
+    internal fun round(): CommandResult {
+        if (currentCombatantIdx.get() < 0) {
+            // check if everyone has rolled before starting the round
+            members.forEach { it.getCurrentInitiativeSafe() }
         }
-        .asSequence()
+        return if (currentCombatantIdx.compareAndSet(-1, 0) || currentCombatantIdx.compareAndSet(members.size, 0)) {
+            RoundResult(
+                members.sortedByDescending {
+                    it.getCurrentInitiativeSafe()
+                }
+                    .asSequence()
+            )
+        } else {
+            Failure(IllegalStateException("Current round is not finished yet, next combatant is ${members[currentCombatantIdx.get()].name}"))
+        }
+    }
+
+    private fun startCountdown(countdown: Countdown): CommandResult {
+        if (currentCombatantIdx.get() < 0) {
+            // round is not started yet
+            members.forEach { it.getCurrentInitiativeSafe() }
+            currentCombatantIdx.set(0)
+        }
+        return if (currentCombatantIdx.get() < members.size - 1) {
+            val idx = currentCombatantIdx.getAndIncrement()
+            CountdownStarted(members[idx], countdown.seconds).also {
+                if (idx == members.size - 1) {
+                    // round is ended
+                    members.forEach { it.currentInitiative = null }
+                }
+            }
+        } else {
+            Failure(IllegalStateException("All combatants have already acted in this round, please start the next one"))
+        }
+    }
 
     /**
      * Ends round, clearing all initiatives
      */
-    internal fun endRound() = members.keys.forEach {
-        members.compute(it) { _, _ -> null }
+    internal fun endRound() = members.forEach {
+        it.currentInitiative = null
     }
 
-    internal fun remove(name: String) = members.remove(name)
+    internal fun removeByName(name: String) = members.removeIf { it.name == name }
 }

@@ -9,8 +9,8 @@ sealed class Command(command: String) {
             return when (parts.first().lowercase()) {
                 "start" -> Start
                 "end" -> End
-                "add" -> Add(parts.lastOrNull() ?: defaultName, parts[1].toInt())
-                "remove" -> Remove(parts.lastOrNull() ?: defaultName)
+                "add" -> Add(parts.getOrElse(2) { defaultName }, parts[1].toInt())
+                "remove" -> Remove(parts.getOrElse(1) { defaultName })
                 "round" -> Round
                 "roll" -> Roll(parts.getOrElse(2) { defaultName }, parts[1].toInt())
                 // todo: configurable countdown interval
