@@ -1,6 +1,7 @@
+import io.github.petertrr.buildutils.configureJacoco
+
 plugins {
     kotlin("jvm") version Versions.kotlin
-    jacoco
     application
 }
 
@@ -22,9 +23,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
-jacoco {
-    toolVersion = "0.8.6"
-}
+configureJacoco()
 
 application {
     mainClass.set("io.github.petertrr.initbot.discord.MainKt")
