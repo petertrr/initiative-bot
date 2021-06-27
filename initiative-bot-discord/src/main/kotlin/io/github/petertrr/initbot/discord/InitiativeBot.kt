@@ -9,15 +9,16 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.mono
 import mu.KotlinLogging
+import reactor.core.Disposable
+import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toMono
-import java.util.concurrent.*
+import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
 class InitiativeBot {
     private lateinit var client: DiscordClient
     private val initiatives = mutableMapOf<String, Initiative>()
-    private val scheduler = Executors.newSingleThreadScheduledExecutor()
-    private lateinit var future: ScheduledFuture<out Any?>
+    private lateinit var countdownSubscription: Disposable
 
     fun start(args: List<String>) {
         client = DiscordClient.create(args.first())
@@ -50,25 +51,28 @@ class InitiativeBot {
             }
             is Failure -> "Error during command `$rawCommand`: `${result.t.message}`"
             is CountdownStarted -> {
-                if (::future.isInitialized && !future.isDone) {
+                if (::countdownSubscription.isInitialized && !countdownSubscription.isDisposed) {
                     logger.info("Canceling the previous countdown")
-                    future.cancel(true)
+                    countdownSubscription.dispose()
                 }
-                val countDownLatch = CountDownLatch(result.period / COUNTDOWN_INTERVAL_SECONDS.toInt())
-                future = scheduler.scheduleAtFixedRate({
-                    message.channel.flatMap { messageChannel ->
-                        messageChannel.createMessage {
-                            it.setAllowedMentions(AllowedMentions.builder().allowUser(author.get().id).build())
-                            countDownLatch.countDown()
-                            if (countDownLatch.count > 0) {
-                                it.setContent("${countDownLatch.count * COUNTDOWN_INTERVAL_SECONDS} seconds left!")
-                            } else {
-                                it.setContent("Time is up!")
-                                future.cancel(true)
+                countdownSubscription = message.channel.flatMapMany { messageChannel ->
+                    val numIntervals = result.period / COUNTDOWN_INTERVAL_SECONDS.toInt()
+                    Flux.interval(Duration.ofSeconds(COUNTDOWN_INTERVAL_SECONDS))
+                        .delaySubscription(Duration.ofSeconds(COUNTDOWN_INTERVAL_SECONDS))
+                        .take(numIntervals.toLong())
+                        .flatMap { i ->
+                            messageChannel.createMessage {
+                                it.setAllowedMentions(AllowedMentions.builder().allowUser(author.get().id).build())
+                                if (i + 1 < numIntervals) {
+                                    it.setContent("${(numIntervals - i - 1) * COUNTDOWN_INTERVAL_SECONDS} seconds left!")
+                                } else {
+                                    it.setContent("Time is up!")
+                                }
                             }
                         }
-                    }.subscribe()
-                }, COUNTDOWN_INTERVAL_SECONDS, COUNTDOWN_INTERVAL_SECONDS, TimeUnit.SECONDS)
+                    }
+                    .log()
+                    .subscribe()
                 "Starting countdown for ${result.period} seconds"
             }
         }
