@@ -13,6 +13,8 @@ class Initiative(
     private val isInitiativeStarted = AtomicBoolean(false)
     private val currentCombatantIdx = AtomicInteger(-1)
 
+    fun hasNextCombatant(): Boolean = currentCombatantIdx.get() <= members.lastIndex
+
     fun execute(rawCommand: String, fallbackName: String): CommandResult {
         val command = try {
             Command.parse(rawCommand, fallbackName)

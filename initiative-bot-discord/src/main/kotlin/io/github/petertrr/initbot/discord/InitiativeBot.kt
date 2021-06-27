@@ -63,7 +63,9 @@ class InitiativeBot {
                 "@${author.get().username} rolled `${result.roll} + (${result.modifier}) = ${result.total}` for character ${result.name}"
             }
             is Failure -> "Error during command `$rawCommand`: `${result.t.javaClass.simpleName}: ${result.t.message}`"
-            is CountdownStarted -> "${result.combatant.name} (init ${result.combatant.currentInitiative}), you have ${result.period} seconds for your turn!".also {
+            is CountdownStarted -> "${result.combatant.name} (init ${result.combatant.currentInitiative}), you have ${result.period} seconds for your turn!".let {
+                if (initiative.hasNextCombatant()) it else "$it Also, you are the last in this round, everyone should call `roll` after your turn."
+            }.also {
                 countdownSubscription = message.channel.startCountdown(author.get(), result.period).subscribe()
             }
             is RoundResult -> formatRoundMessage(result)
