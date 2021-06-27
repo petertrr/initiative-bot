@@ -10,11 +10,14 @@ import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.mono
 import mu.KotlinLogging
 import reactor.kotlin.core.publisher.toMono
+import java.util.concurrent.*
 
 private val logger = KotlinLogging.logger {}
 class InitiativeBot {
     private lateinit var client: DiscordClient
     private val initiatives = mutableMapOf<String, Initiative>()
+    private val scheduler = Executors.newSingleThreadScheduledExecutor()
+    private lateinit var future: ScheduledFuture<out Any?>
 
     fun start(args: List<String>) {
         client = DiscordClient.create(args.first())
@@ -46,6 +49,28 @@ class InitiativeBot {
 
             }
             is Failure -> "Error during command `$rawCommand`: `${result.t.message}`"
+            is CountdownStarted -> {
+                if (::future.isInitialized && !future.isDone) {
+                    logger.info("Canceling the previous countdown")
+                    future.cancel(true)
+                }
+                val countDownLatch = CountDownLatch(result.period / COUNTDOWN_INTERVAL_SECONDS.toInt())
+                future = scheduler.scheduleAtFixedRate({
+                    message.channel.flatMap { messageChannel ->
+                        messageChannel.createMessage {
+                            it.setAllowedMentions(AllowedMentions.builder().allowUser(author.get().id).build())
+                            countDownLatch.countDown()
+                            if (countDownLatch.count > 0) {
+                                it.setContent("${countDownLatch.count * COUNTDOWN_INTERVAL_SECONDS} seconds left!")
+                            } else {
+                                it.setContent("Time is up!")
+                                future.cancel(true)
+                            }
+                        }
+                    }.subscribe()
+                }, COUNTDOWN_INTERVAL_SECONDS, COUNTDOWN_INTERVAL_SECONDS, TimeUnit.SECONDS)
+                "Starting countdown for ${result.period} seconds"
+            }
         }
         message.channel.flatMap { messageChannel ->
             messageChannel.createMessage {
@@ -57,5 +82,10 @@ class InitiativeBot {
 
     companion object {
         internal const val BOT_PREFIX = "!ib"
+
+        /**
+         * An interval to post updates on countdown to the chat
+         */
+        private const val COUNTDOWN_INTERVAL_SECONDS = 15L
     }
 }

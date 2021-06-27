@@ -20,6 +20,9 @@ class Initiative(
                 remove(command.name)
                 Success("Successfully removed ${command.name} from initiative")
             }
+            is Countdown -> {
+                CountdownStarted(command.seconds)
+            }
 //            Round -> round()
         }
     }

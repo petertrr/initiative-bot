@@ -15,6 +15,8 @@ sealed class Command(val command: String) {
                     } ?: throw IllegalArgumentException("Malformed roll command, should be `roll <modifier> [name]`")
                 }
                 rawCommand.startsWith("remove", ignoreCase = true) -> Remove(rawCommand.substringAfter("remove").trim())
+                // todo: configurable countdown interval
+                rawCommand.equals("next", ignoreCase = true) -> Countdown(60)
                 else -> throw IllegalArgumentException("Malformed roll command: `$rawCommand`")
             }
         }
@@ -34,3 +36,5 @@ class Roll(val name: String, val modifier: Int) : Command("roll") {
 }
 
 class Remove(val name: String) : Command("remove")
+
+class Countdown(val seconds: Int) : Command("countdown")

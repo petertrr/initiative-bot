@@ -9,3 +9,5 @@ data class RollResult(val roll: Int, val modifier: Int) : CommandResult() {
 }
 
 data class Failure(val t: Throwable) : CommandResult()
+
+data class CountdownStarted(val period: Int) : CommandResult()
