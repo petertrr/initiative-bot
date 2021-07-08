@@ -59,7 +59,7 @@ class Initiative(
         members.add(
             Combatant(addCommand.name, addCommand.baseModifier, null)
         )
-        return Success("Added ${addCommand.name} with base modifier ${addCommand.baseModifier} to the initiative")
+        return AddSuccess(addCommand.name, addCommand.baseModifier)
     }
 
     /**

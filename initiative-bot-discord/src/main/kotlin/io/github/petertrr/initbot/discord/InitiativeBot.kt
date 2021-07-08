@@ -7,6 +7,7 @@ import discord4j.core.`object`.entity.channel.MessageChannel
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.rest.util.AllowedMentions
 import io.github.petertrr.initbot.*
+import io.github.petertrr.initbot.discord.entities.UserState
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.reactive.asFlow
@@ -17,11 +18,13 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 
 private val logger = KotlinLogging.logger {}
 class InitiativeBot {
     private lateinit var client: DiscordClient
     private val initiatives = mutableMapOf<String, Initiative>()
+    private val userNameByCharacterNameByChannel = ConcurrentHashMap<String, MutableMap<User, UserState>>()
     private lateinit var countdownSubscription: Disposable
 
     fun start(args: List<String>) {
@@ -41,16 +44,27 @@ class InitiativeBot {
 
     private fun handleMessageCreateEvent(messageCreateEvent: MessageCreateEvent) {
         val message = messageCreateEvent.message
-        val author = message.author
+        val channelId = message.channelId
+        val author = message.author.get()
         val rawCommand = message.content.dropWhile { it in BOT_PREFIX }.trim()
         val initiative = initiatives.computeIfAbsent(message.channelId.asString()) {
             logger.info("Creating new Initiative for channel $it")
             Initiative()
         }
+        userNameByCharacterNameByChannel.computeIfAbsent(message.channelId.asString()) {
+            mutableMapOf()
+        }
         logger.info("Received message `${message.content}`, will run command `$rawCommand`")
 
         val result = try {
-            initiative.execute(rawCommand, author.get().username)
+            val characterNames = userNameByCharacterNameByChannel[channelId.asString()]!![author]
+                ?.characterNames
+            val fallbackName = characterNames
+                ?.singleOrNull()
+                ?: author.username.also {
+                    logger.warn { "User $it has multiple or no added characters ($characterNames), so will use username as fallback" }
+                }
+            initiative.execute(rawCommand, fallbackName)
         } catch (e: Exception) {
             logger.error("Error executing command", e)
             Failure(e)
@@ -58,22 +72,29 @@ class InitiativeBot {
 
         val response: String = when (result) {
             is Success -> result.message
+            is AddSuccess -> {
+                val userState = userNameByCharacterNameByChannel[channelId.asString()]!!.computeIfAbsent(author) { UserState() }
+                if (result.name !in userState.characterNames) {
+                    userState.characterNames.add(result.name)
+                }
+                result.message
+            }
             is RollResult -> {
-                logger.info("@${author.get().username} rolled ${result.roll}")
-                "@${author.get().username} rolled `${result.roll} + (${result.modifier}) = ${result.total}` for character ${result.name}"
+                logger.info("@${author.username} rolled ${result.roll}")
+                "@${author.username} rolled `${result.roll} + (${result.modifier}) = ${result.total}` for character ${result.name}"
             }
             is Failure -> "Error during command `$rawCommand`: `${result.t.javaClass.simpleName}: ${result.t.message}`"
             is CountdownStarted -> "${result.combatant.name} (init ${result.combatant.currentInitiative}), you have ${result.period} seconds for your turn!".let {
                 if (initiative.hasNextCombatant()) it else "$it Also, you are the last in this round, everyone should call `roll` after your turn."
             }.also {
-                countdownSubscription = message.channel.startCountdown(author.get(), result.period).subscribe()
+                countdownSubscription = message.channel.startCountdown(author, result.period).subscribe()
             }
             is RoundResult -> formatRoundMessage(result)
         }
 
         message.channel.flatMap { messageChannel ->
             messageChannel.createMessage {
-                it.setAllowedMentions(AllowedMentions.builder().allowUser(author.get().id).build())
+                it.setAllowedMentions(AllowedMentions.builder().allowUser(author.id).build())
                 it.setContent(response)
             }
         }
