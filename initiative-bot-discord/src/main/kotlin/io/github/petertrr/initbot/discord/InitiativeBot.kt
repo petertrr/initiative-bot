@@ -94,6 +94,10 @@ class InitiativeBot {
                 result.message
             }
             is RollResult -> {
+                if (::countdownSubscription.isInitialized && !countdownSubscription.isDisposed) {
+                    logger.info { "Disposing countdown subscription, because ${author.username} has started rolling for new round" }
+                    countdownSubscription.dispose()
+                }
                 logger.info("@${author.username} rolled ${result.roll}")
                 "${author.mention} rolled `${result.roll} + (${result.modifier}) = ${result.total}` for character ${result.name}"
             }
