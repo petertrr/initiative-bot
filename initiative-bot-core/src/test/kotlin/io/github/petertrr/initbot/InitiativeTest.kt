@@ -77,6 +77,56 @@ class InitiativeTest {
         Assertions.assertTrue(initiative.members.isEmpty())
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
+    @Test
+    fun `test with 6 members and removing before round`() {
+        Mockito.`when`(random.nextInt(1, 20))
+            .thenReturn(17, 14, 10, 10, 15, 7)
+        val initiative = Initiative(random = random)
+        initiative.executeCommands(
+            defaultName = "Fallback",
+            "start",
+            "add +4 Tom",
+            "add +3 Jerry",
+            "add +1 Tuffy",
+            "add +2 Alpha",
+            "add +1 Beta",
+            "add +3 Gamma",
+            "remove Tuffy",
+            "add +2 Tuffy",
+            "roll -2 Beta",
+            "roll +0 Gamma",
+            "roll +1 Tuffy",
+            "roll +0 Jerry",
+            "roll +2 Alpha",
+            "roll -5 Tom",
+        )
+
+        val combatants = (initiative.round() as RoundResult).combatants.toList()
+        Assertions.assertIterableEquals(
+            listOf("Alpha", "Gamma", "Beta", "Jerry", "Tuffy", "Tom"),
+            combatants.map { it.name }
+        )
+
+        Assertions.assertIterableEquals(
+            listOf(19, 17, 16, 13, 13, 6),
+            combatants.map { it.currentInitiative }
+        )
+
+        val countdown = Countdown(60)
+        val combatantsSorted = buildList {
+            // fixme: currently after last participant's turn all initiatives are set to null, so for now 5 instead of 6
+            repeat(5) { add((initiative.startCountdown(countdown) as CountdownStarted).combatant) }
+        }
+        Assertions.assertTrue {
+            combatantsSorted.zipWithNext().all { it.first.currentInitiative!! >= it.second.currentInitiative!! }
+        }
+        Assertions.assertIterableEquals(
+            listOf("Alpha", "Gamma", "Beta", "Jerry", "Tuffy"),
+            combatantsSorted.map { it.name }
+        )
+    }
+
     @Test
     fun `should fail if end is requested before start`() {
         Assertions.assertThrows(IllegalStateException::class.java) {

@@ -81,18 +81,17 @@ class Initiative(
             members.forEach { it.getCurrentInitiativeSafe() }
         }
         return if (currentCombatantIdx.compareAndSet(-1, 0) || currentCombatantIdx.compareAndSet(members.size, 0)) {
-            RoundResult(
-                members.sortedByDescending {
-                    it.getCurrentInitiativeSafe()
-                }
-                    .asSequence()
-            )
+            // sort members according to current initiative *in place*
+            members.sortByDescending {
+                it.getCurrentInitiativeSafe()
+            }
+            RoundResult(members.asSequence())
         } else {
             Failure(IllegalStateException("Current round is not finished yet, next combatant is ${members[currentCombatantIdx.get()].name}"))
         }
     }
 
-    private fun startCountdown(countdown: Countdown): CommandResult {
+    internal fun startCountdown(countdown: Countdown): CommandResult {
         if (currentCombatantIdx.get() < 0) {
             // round is not started yet
             members.forEach { it.getCurrentInitiativeSafe() }
