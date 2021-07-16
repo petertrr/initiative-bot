@@ -8,8 +8,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.rest.util.AllowedMentions
 import io.github.petertrr.initbot.*
 import io.github.petertrr.initbot.discord.entities.UserState
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.mono
 import mu.KotlinLogging
@@ -30,40 +29,55 @@ class InitiativeBot {
     fun start(args: List<String>) {
         client = DiscordClient.create(args.first())
 
-        client.withGateway {
-            mono {
-                it.on(MessageCreateEvent::class.java)
-                    .asFlow()
-                    .filter { it.message.content.startsWith(BOT_PREFIX) }
-                    .collect { handleMessageCreateEvent(it) }
-                    .toMono()
-            }
+        client.withGateway { gatewayDiscordClient ->
+            gatewayDiscordClient.on(MessageCreateEvent::class.java)
+                .filter { it.message.content.startsWith(BOT_PREFIX) }
+                .flatMap {
+                    initializeInitiativeIfAbsent(it.message.channelId.asString())
+                    handleMessageCreateEvent(it)
+                }
         }
             .block()
     }
 
-    private fun handleMessageCreateEvent(messageCreateEvent: MessageCreateEvent) {
+    private fun initializeInitiativeIfAbsent(channelId: String) {
+        initiatives.computeIfAbsent(channelId) {
+            logger.info("Creating new Initiative for channel $it")
+            Initiative()
+        }
+        userNameByCharacterNameByChannel.computeIfAbsent(channelId) {
+            mutableMapOf()
+        }
+    }
+
+    private fun getCharacterNameFor(user: User, channelId: String): String {
+        val characterNames = userNameByCharacterNameByChannel[channelId]!![user]
+            ?.characterNames
+        return characterNames
+            ?.singleOrNull()
+            ?: user.username.also {
+                logger.warn {
+                    "User $it has ${if (characterNames == null) "no" else "multiple ($characterNames)"} added characters, so will use username as fallback"
+                }
+            }
+    }
+
+    private fun computeUserStateIfAbsent(user: User, channelId: String): UserState {
+        return userNameByCharacterNameByChannel[channelId]!!.computeIfAbsent(user) {
+            UserState()
+        }
+    }
+
+    private fun handleMessageCreateEvent(messageCreateEvent: MessageCreateEvent): Mono<Message> {
         val message = messageCreateEvent.message
         val channelId = message.channelId
         val author = message.author.get()
         val rawCommand = message.content.dropWhile { it in BOT_PREFIX }.trim()
-        val initiative = initiatives.computeIfAbsent(message.channelId.asString()) {
-            logger.info("Creating new Initiative for channel $it")
-            Initiative()
-        }
-        userNameByCharacterNameByChannel.computeIfAbsent(message.channelId.asString()) {
-            mutableMapOf()
-        }
+        val initiative = initiatives[channelId.asString()]!!
         logger.info("Received message `${message.content}`, will run command `$rawCommand`")
 
         val result = try {
-            val characterNames = userNameByCharacterNameByChannel[channelId.asString()]!![author]
-                ?.characterNames
-            val fallbackName = characterNames
-                ?.singleOrNull()
-                ?: author.username.also {
-                    logger.warn { "User $it has multiple or no added characters ($characterNames), so will use username as fallback" }
-                }
+            val fallbackName = getCharacterNameFor(author, channelId.asString())
             initiative.execute(rawCommand, fallbackName)
         } catch (e: Exception) {
             logger.error("Error executing command", e)
@@ -73,7 +87,7 @@ class InitiativeBot {
         val response: String = when (result) {
             is Success -> result.message
             is AddSuccess -> {
-                val userState = userNameByCharacterNameByChannel[channelId.asString()]!!.computeIfAbsent(author) { UserState() }
+                val userState = computeUserStateIfAbsent(author, channelId.asString())
                 if (result.name !in userState.characterNames) {
                     userState.characterNames.add(result.name)
                 }
@@ -92,13 +106,12 @@ class InitiativeBot {
             is RoundResult -> formatRoundMessage(result)
         }
 
-        message.channel.flatMap { messageChannel ->
+        return message.channel.flatMap { messageChannel ->
             messageChannel.createMessage {
                 it.setAllowedMentions(AllowedMentions.builder().allowUser(author.id).build())
                 it.setContent(response)
             }
         }
-            .subscribe()
     }
 
     private fun Mono<MessageChannel>.startCountdown(author: User, seconds: Int): Flux<Message> {
