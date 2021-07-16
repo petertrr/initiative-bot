@@ -1,7 +1,8 @@
-import io.github.petertrr.buildutils.configureJacoco
+import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
 
 plugins {
     kotlin("jvm") version Versions.kotlin
+    `code-coverage`
 }
 
 dependencies {
@@ -12,8 +13,10 @@ dependencies {
     testImplementation("org.mockito:mockito-junit-jupiter:${Versions.mockito}")
 }
 
+tasks.withType<KotlinCompile<*>>().configureEach {
+    kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.OptIn"
+}
+
 tasks.test {
     useJUnitPlatform()
 }
-
-configureJacoco()
