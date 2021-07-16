@@ -95,15 +95,20 @@ class InitiativeBot {
             }
             is RollResult -> {
                 logger.info("@${author.username} rolled ${result.roll}")
-                "@${author.username} rolled `${result.roll} + (${result.modifier}) = ${result.total}` for character ${result.name}"
+                "${author.mention} rolled `${result.roll} + (${result.modifier}) = ${result.total}` for character ${result.name}"
             }
             is Failure -> "Error during command `$rawCommand`: `${result.t.javaClass.simpleName}: ${result.t.message}`"
-            is CountdownStarted -> "${result.combatant.name} (init ${result.combatant.currentInitiative}), you have ${result.period} seconds for your turn!".let {
-                if (initiative.hasNextCombatant()) it else "$it Also, you are the last in this round, everyone should call `roll` after your turn."
-            }.also {
-                countdownSubscription = message.channel.startCountdown(author, result.period).subscribe()
+            is CountdownStarted -> {
+                val user = userNameByCharacterNameByChannel[channelId.asString()]!!.filterValues {
+                    result.combatant.name in it.characterNames
+                }.keys.single()
+                "${result.combatant.name} (init ${result.combatant.currentInitiative}) is up, ${user.mention}, you have ${result.period} seconds for your turn!".let {
+                    if (initiative.hasNextCombatant()) it else "$it Also, you are the last in this round, everyone should call `roll` after your turn."
+                }.also {
+                    countdownSubscription = message.channel.startCountdown(author, result.period).subscribe()
+                }
             }
-            is RoundResult -> formatRoundMessage(result)
+            is RoundResult -> formatRoundMessage(result, channelId.asString())
         }
 
         return message.channel.flatMap { messageChannel ->
@@ -138,14 +143,18 @@ class InitiativeBot {
             .log()
     }
 
-    private fun formatRoundMessage(roundResult: RoundResult): String {
-        val longestLineLength = roundResult.combatants.map {
+    private fun formatRoundMessage(roundResult: RoundResult, channelId: String): String {
+        val longestLineLength = roundResult.combatants.maxOf {
             it.name.length + it.currentInitiative!!.toString().length
         }
-            .maxOrNull()!!
-        return "Starting a new round of initiative:" + roundResult.combatants.joinToString(System.lineSeparator(), prefix = System.lineSeparator()) {
-            it.name +  it.currentInitiative.toString().prependIndent(".".repeat(longestLineLength - it.name.length))
-        }
+        return "Starting a new round of initiative:" +
+                roundResult.combatants.joinToString(System.lineSeparator(), prefix = System.lineSeparator()) { combatant ->
+                    val owner = userNameByCharacterNameByChannel[channelId]!!.filterValues {
+                        combatant.name in it.characterNames
+                    }.keys.single()
+                    combatant.name + ".".repeat(longestLineLength - combatant.name.length) + combatant.currentInitiative +
+                            " ... owner ${owner.mention}"
+                }
     }
 
     companion object {
