@@ -28,4 +28,5 @@ configureJacoco()
 
 application {
     mainClass.set("io.github.petertrr.initbot.discord.MainKt")
+    applicationName = "${project.name}-${project.version}"
 }
