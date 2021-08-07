@@ -93,6 +93,12 @@ class InitiativeBot {
                 }
                 result.message
             }
+            is RemoveSuccess -> {
+                // todo: if user attempts to remove other user's character, they will succeed in initiative-bot-core, but fail here
+                val userState = computeUserStateIfAbsent(author, channelId.asString())
+                userState.characterNames.removeIf { it == result.name }
+                result.message
+            }
             is RollResult -> {
                 if (::countdownSubscription.isInitialized && !countdownSubscription.isDisposed) {
                     logger.info { "Disposing countdown subscription, because ${author.username} has started rolling for new round" }

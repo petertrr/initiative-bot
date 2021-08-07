@@ -26,10 +26,7 @@ class Initiative(
             Start -> start()
             End -> end()
             is Add -> add(command)
-            is Remove -> {
-                removeByName(command.name)
-                Success("Successfully removed ${command.name} from initiative")
-            }
+            is Remove -> removeByName(command.name)
             is Roll -> roll(command)
             is Countdown -> startCountdown(command)
             Round -> round()
@@ -117,5 +114,10 @@ class Initiative(
         it.currentInitiative = null
     }
 
-    internal fun removeByName(name: String) = members.removeIf { it.name == name }
+    internal fun removeByName(name: String) =
+        if (members.removeIf { it.name == name }) {
+            RemoveSuccess(name)
+        } else {
+            Failure(IllegalStateException("Character $name is not present in the initiative"))
+        }
 }
