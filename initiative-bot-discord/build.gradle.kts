@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version Versions.kotlin
+    `common-kotlin-jvm-configuration`
     application
     `code-coverage`
 }
@@ -13,14 +13,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:2.0.8")
     implementation("ch.qos.logback:logback-core:${Versions.logback}")
     runtimeOnly("ch.qos.logback:logback-classic:${Versions.logback}")
-    testImplementation(kotlin("test-junit5"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${Versions.junit}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${Versions.junit}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${Versions.coroutines}")
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
 
 application {

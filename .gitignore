@@ -4,3 +4,4 @@ build
 target
 /shelf/
 /workspace.xml
+*.log
