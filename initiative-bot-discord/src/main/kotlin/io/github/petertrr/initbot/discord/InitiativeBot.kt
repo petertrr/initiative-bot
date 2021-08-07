@@ -114,7 +114,7 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
                     result.combatant.name in it.characterNames
                 }.keys.single()
                 "${result.combatant.name} (init ${result.combatant.currentInitiative}) is up, ${user.mention}, you have ${result.period} seconds for your turn!".let {
-                    if (initiative.hasNextCombatant()) it else "$it Also, you are the last in this round, everyone should call `roll` after your turn."
+                    if (initiative.hasNextCombatant()) it else "$it Also, you are the last in this round, DM should call `end-round` after."
                 }.also {
                     countdownSubscription = message.channel.startCountdown(author, result.period).subscribe()
                 }

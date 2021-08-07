@@ -8,6 +8,7 @@ Speed Factor from DMG or Greyhawk initiative from Unearthed Arcana.
 * `!ib add <base modifier> [name]` - add a participant `name` (defaults to username) with base initiative modifier
 * `!ib remove [name]`
 * `!ib round` - start a new round
+* `!ib end-round` - end the round
 * `!ib roll <modifier> [name]` (`name` defaults to the username) - rolls initiative for the current round, combining `modifier` and base modifier
 * `!ib mods` - show modifiers for different actions
 

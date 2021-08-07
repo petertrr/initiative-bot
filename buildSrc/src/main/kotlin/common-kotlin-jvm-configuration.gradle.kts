@@ -15,7 +15,7 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile<*>>().configureEach {
-    kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.OptIn"
+    kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
 
 tasks.test {

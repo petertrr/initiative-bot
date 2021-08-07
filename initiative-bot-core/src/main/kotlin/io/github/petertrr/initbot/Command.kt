@@ -12,6 +12,7 @@ sealed class Command(command: String) {
                 "add" -> Add(parts.getOrElse(2) { defaultName }, parts[1].toInt())
                 "remove" -> Remove(parts.getOrElse(1) { defaultName })
                 "round" -> Round
+                "end-round" -> EndRound
                 "roll" -> Roll(parts.getOrElse(2) { defaultName }, parts[1].toInt())
                 "next" -> Countdown(defaultRoundSeconds)
                 "help" -> Help
@@ -28,6 +29,8 @@ object Start : Command("start")
 object End : Command("end")
 
 object Round : Command("round")
+
+object EndRound : Command("end-round")
 
 data class Roll(val name: String, val modifier: Int) : Command("roll") {
     companion object {

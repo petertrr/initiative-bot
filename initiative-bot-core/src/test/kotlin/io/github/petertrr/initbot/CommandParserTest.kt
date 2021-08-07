@@ -7,6 +7,7 @@ class CommandParserTest {
     @Test
     fun `should parse different valid commands`() {
         val defaultName = "Tester"
+        val defaultRoundDuration = 45L
         mapOf(
             "help" to Help,
             "start" to Start,
@@ -20,7 +21,7 @@ class CommandParserTest {
             "roll +2 Tom" to Roll("Tom", 2),
             "next" to Countdown(60),
         ).forEach { (rawCommand, expectedCommand) ->
-            Assertions.assertEquals(expectedCommand, Command.parse(rawCommand, defaultName))
+            Assertions.assertEquals(expectedCommand, Command.parse(rawCommand, defaultName, defaultRoundDuration))
         }
     }
 }

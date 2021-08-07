@@ -55,10 +55,11 @@ class InitiativeTest {
             "next",
             "next",
             "next",
+            "end-round",
         )
 
-        Assertions.assertTrue(initiative.members.all { it.currentInitiative == null }) {
-            "Should have removed old initiatives after last participant's turn"
+        Assertions.assertFalse(initiative.isRoundStarted.get()) {
+            "Should have marked round as ended after `end-round` command"
         }
 
         // second round
@@ -124,6 +125,45 @@ class InitiativeTest {
         Assertions.assertIterableEquals(
             listOf("Alpha", "Gamma", "Beta", "Jerry", "Tuffy"),
             combatantsSorted.map { it.name }
+        )
+    }
+
+    @Test
+    fun `test`() {
+        Mockito.`when`(random.nextInt(1, 20))
+            .thenReturn(17, 14, 10, 10, 15, 7)
+        val initiative = Initiative(random = random)
+        initiative.executeCommands(
+            defaultName = "Fallback",
+            "start",
+            "add +4 Tom",
+            "add +3 Jerry",
+            "roll -5 Tom",
+            "roll +2 Jerry",
+            "round",
+            "next",
+            "next",
+        )
+
+        Assertions.assertTrue {
+            initiative.execute("next", "Fallback") is Failure
+        }
+
+        initiative.executeCommands(
+            defaultName = "Fallback",
+            "end-round",
+            "roll -5 Tom",
+        )
+
+        Assertions.assertTrue {
+            initiative.execute("round", "Fallback") is Failure
+        }
+
+        initiative.executeCommands(
+            defaultName = "Fallback",
+            "roll +2 Jerry",
+            "roll -3 Tom",
+            "round",
         )
     }
 
