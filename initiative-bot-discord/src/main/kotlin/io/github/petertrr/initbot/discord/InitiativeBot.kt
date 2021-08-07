@@ -7,6 +7,7 @@ import discord4j.core.`object`.entity.channel.MessageChannel
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.rest.util.AllowedMentions
 import io.github.petertrr.initbot.*
+import io.github.petertrr.initbot.discord.entities.BotConfiguration
 import io.github.petertrr.initbot.discord.entities.UserState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.reactive.asFlow
@@ -20,7 +21,7 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 private val logger = KotlinLogging.logger {}
-class InitiativeBot {
+class InitiativeBot(private val botConfiguration: BotConfiguration) {
     private lateinit var client: DiscordClient
     private val initiatives = mutableMapOf<String, Initiative>()
     private val userNameByCharacterNameByChannel = ConcurrentHashMap<String, MutableMap<User, UserState>>()
@@ -31,7 +32,7 @@ class InitiativeBot {
 
         client.withGateway { gatewayDiscordClient ->
             gatewayDiscordClient.on(MessageCreateEvent::class.java)
-                .filter { it.message.content.startsWith(BOT_PREFIX) }
+                .filter { it.message.content.startsWith(botConfiguration.prefix) }
                 .flatMap {
                     initializeInitiativeIfAbsent(it.message.channelId.asString())
                     handleMessageCreateEvent(it)
@@ -72,7 +73,7 @@ class InitiativeBot {
         val message = messageCreateEvent.message
         val channelId = message.channelId
         val author = message.author.get()
-        val rawCommand = message.content.dropWhile { it in BOT_PREFIX }.trim()
+        val rawCommand = message.content.dropWhile { it in botConfiguration.prefix }.trim()
         val initiative = initiatives[channelId.asString()]!!
         logger.info("Received message `${message.content}`, will run command `$rawCommand`")
 
@@ -135,15 +136,15 @@ class InitiativeBot {
             countdownSubscription.dispose()
         }
         return this.flatMapMany { messageChannel ->
-            val numIntervals = seconds / COUNTDOWN_INTERVAL_SECONDS.toInt()
-            Flux.interval(Duration.ofSeconds(COUNTDOWN_INTERVAL_SECONDS))
-                .delaySubscription(Duration.ofSeconds(COUNTDOWN_INTERVAL_SECONDS))
-                .take(numIntervals.toLong())
+            val numIntervals = seconds / botConfiguration.turnDurationSeconds
+            Flux.interval(Duration.ofSeconds(botConfiguration.turnDurationSeconds))
+                .delaySubscription(Duration.ofSeconds(botConfiguration.turnDurationSeconds))
+                .take(numIntervals)
                 .flatMap { i ->
                     messageChannel.createMessage {
                         it.setAllowedMentions(AllowedMentions.builder().allowUser(author.id).build())
                         if (i + 1 < numIntervals) {
-                            it.setContent("${(numIntervals - i - 1) * COUNTDOWN_INTERVAL_SECONDS} seconds left!")
+                            it.setContent("${(numIntervals - i - 1) * botConfiguration.turnDurationSeconds} seconds left!")
                         } else {
                             it.setContent("Time is up!")
                         }
@@ -165,14 +166,5 @@ class InitiativeBot {
                     combatant.name + ".".repeat(longestLineLength - combatant.name.length) + combatant.currentInitiative +
                             " ... owner ${owner.mention}"
                 }
-    }
-
-    companion object {
-        internal const val BOT_PREFIX = "!ib"
-
-        /**
-         * An interval to post updates on countdown to the chat
-         */
-        private const val COUNTDOWN_INTERVAL_SECONDS = 15L
     }
 }
