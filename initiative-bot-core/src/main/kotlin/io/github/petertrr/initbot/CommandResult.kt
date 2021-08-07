@@ -20,6 +20,6 @@ data class RollResult(val roll: Int, val modifier: Int, val name: String) : Comm
 
 data class Failure(val t: Throwable) : CommandResult()
 
-data class CountdownStarted(val combatant: Combatant, val period: Int) : CommandResult()
+data class CountdownStarted(val combatant: Combatant, val period: Long) : CommandResult()
 
 data class RoundResult(val combatants: Sequence<Combatant>) : CommandResult()

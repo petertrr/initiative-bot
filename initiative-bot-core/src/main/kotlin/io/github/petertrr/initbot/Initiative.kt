@@ -8,7 +8,8 @@ import kotlin.random.Random
 
 class Initiative(
     internal val members: MutableList<Combatant> = Collections.synchronizedList(mutableListOf()),
-    private val random: Random = Random.Default
+    private val random: Random = Random.Default,
+    private val turnDurationSeconds: Long = 45L
 ) {
     private val isInitiativeStarted = AtomicBoolean(false)
     private val currentCombatantIdx = AtomicInteger(-1)
@@ -17,7 +18,7 @@ class Initiative(
 
     fun execute(rawCommand: String, fallbackName: String): CommandResult {
         val command = try {
-            Command.parse(rawCommand, fallbackName)
+            Command.parse(rawCommand, fallbackName, turnDurationSeconds)
         } catch (ex: Exception) {
             return Failure(ex)
         }

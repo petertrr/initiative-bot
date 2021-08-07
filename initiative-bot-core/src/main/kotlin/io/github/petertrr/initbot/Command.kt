@@ -4,10 +4,7 @@ import java.lang.IllegalArgumentException
 
 sealed class Command(command: String) {
     companion object {
-        // todo: configurable countdown interval
-        private const val DEFAULT_ROUND_SECONDS = 45
-
-        fun parse(rawCommand: String, defaultName: String = "Fallback"): Command {
+        fun parse(rawCommand: String, defaultName: String = "Fallback", defaultRoundSeconds: Long): Command {
             val parts = rawCommand.split(" ")
             return when (parts.first().lowercase()) {
                 "start" -> Start
@@ -16,7 +13,7 @@ sealed class Command(command: String) {
                 "remove" -> Remove(parts.getOrElse(1) { defaultName })
                 "round" -> Round
                 "roll" -> Roll(parts.getOrElse(2) { defaultName }, parts[1].toInt())
-                "next" -> Countdown(DEFAULT_ROUND_SECONDS)
+                "next" -> Countdown(defaultRoundSeconds)
                 "help" -> Help
                 else -> throw IllegalArgumentException("Malformed roll command: `$rawCommand`")
             }
@@ -42,4 +39,4 @@ data class Add(val name: String, val baseModifier: Int) : Command("add")
 
 data class Remove(val name: String) : Command("remove")
 
-data class Countdown(val seconds: Int) : Command("countdown")
+data class Countdown(val seconds: Long) : Command("countdown")

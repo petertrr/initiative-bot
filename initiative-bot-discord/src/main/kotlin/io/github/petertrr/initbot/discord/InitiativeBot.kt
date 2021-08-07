@@ -44,7 +44,7 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
     private fun initializeInitiativeIfAbsent(channelId: String) {
         initiatives.computeIfAbsent(channelId) {
             logger.info("Creating new Initiative for channel $it")
-            Initiative()
+            Initiative(turnDurationSeconds = botConfiguration.turnDurationSeconds)
         }
         userNameByCharacterNameByChannel.computeIfAbsent(channelId) {
             mutableMapOf()
@@ -130,7 +130,7 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
         }
     }
 
-    private fun Mono<MessageChannel>.startCountdown(author: User, seconds: Int): Flux<Message> {
+    private fun Mono<MessageChannel>.startCountdown(author: User, seconds: Long): Flux<Message> {
         if (::countdownSubscription.isInitialized && !countdownSubscription.isDisposed) {
             logger.info("Canceling the previous countdown")
             countdownSubscription.dispose()
