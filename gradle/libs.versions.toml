@@ -1,0 +1,24 @@
+[versions]
+kotlin = "1.5.30"
+kotlinx-coroutines = "1.5.1"
+junit = "5.7.2"
+mockito = "3.11.2"
+discord4j = "3.1.5"
+reactor = "1.1.4"
+slf4j = "1.7.30"
+logback = "1.2.3"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
+[libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinx-coroutines" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+microutils-logging = { module = "io.github.microutils:kotlin-logging", version = "2.0.11" }
+reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions", version.ref = "reactor" }
+discord4j-core = { module = "com.discord4j:discord4j-core", version.ref = "discord4j" }
+logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }

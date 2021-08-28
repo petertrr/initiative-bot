@@ -19,7 +19,7 @@ class CommandParserTest {
             "round" to Round,
             "roll +2" to Roll(defaultName, 2),
             "roll +2 Tom" to Roll("Tom", 2),
-            "next" to Countdown(60),
+            "next" to Countdown(45),
         ).forEach { (rawCommand, expectedCommand) ->
             Assertions.assertEquals(expectedCommand, Command.parse(rawCommand, defaultName, defaultRoundDuration))
         }

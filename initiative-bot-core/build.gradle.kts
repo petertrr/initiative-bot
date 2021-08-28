@@ -4,6 +4,6 @@ plugins {
 }
 
 dependencies {
-    testImplementation("org.mockito:mockito-core:${Versions.mockito}")
-    testImplementation("org.mockito:mockito-junit-jupiter:${Versions.mockito}")
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
 }
