@@ -16,7 +16,7 @@ dependencies {
 }
 
 tasks.withType<KotlinJvmCompile>().configureEach {
-    kotlinOptions.jvmTarget = "14"
+    kotlinOptions.jvmTarget = "1.8"
     kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
 
