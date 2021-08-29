@@ -14,6 +14,7 @@ class Initiative(
     private val isInitiativeStarted = AtomicBoolean(false)
     internal val isRoundStarted = AtomicBoolean(false)
     private val currentCombatantIdx = AtomicInteger(0)
+    private val currentRound = AtomicInteger(0)
 
     fun hasNextCombatant(): Boolean = currentCombatantIdx.get() <= members.lastIndex
 
@@ -83,11 +84,12 @@ class Initiative(
             Failure(IllegalStateException("Round is already in progress, next combatant is ${members[currentCombatantIdx.get()].name}. To finish round, call `next` for all participants and then `end-round` before starting the new one"))
         } else {
             currentCombatantIdx.set(0)
+            currentRound.incrementAndGet()
             // sort members according to current initiative *in place*
             members.sortByDescending {
                 it.getCurrentInitiativeSafe()
             }
-            RoundResult(members.asSequence())
+            RoundResult(currentRound.get(), members.asSequence())
         }
     }
 

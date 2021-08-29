@@ -158,7 +158,7 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
         val longestLineLength = roundResult.combatants.maxOf {
             it.name.length + it.currentInitiative!!.toString().length
         }
-        return "Starting a new round of initiative:" +
+        return "Starting **round ${roundResult.roundIdx}** of initiative:" +
                 roundResult.combatants.joinToString(System.lineSeparator(), prefix = System.lineSeparator()) { combatant ->
                     val owner = userNameByCharacterNameByChannel[channelId]!!.filterValues {
                         combatant.name in it.characterNames
