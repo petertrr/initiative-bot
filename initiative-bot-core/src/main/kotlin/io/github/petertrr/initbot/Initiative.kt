@@ -1,6 +1,7 @@
 package io.github.petertrr.initbot
 
 import io.github.petertrr.initbot.entities.Combatant
+import io.github.petertrr.initbot.sorting.CombatantsSorter
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -8,6 +9,7 @@ import kotlin.random.Random
 
 class Initiative(
     internal val members: MutableList<Combatant> = Collections.synchronizedList(mutableListOf()),
+    private val sorter: CombatantsSorter,
     private val random: Random = Random.Default,
     private val turnDurationSeconds: Long = 45L
 ) {
@@ -85,10 +87,8 @@ class Initiative(
         } else {
             currentCombatantIdx.set(0)
             currentRound.incrementAndGet()
-            // sort members according to current initiative *in place*
-            members.sortByDescending {
-                it.getCurrentInitiativeSafe()
-            }
+            // sort members *in place*
+            sorter.sort(members)
             RoundResult(currentRound.get(), members.asSequence())
         }
     }
