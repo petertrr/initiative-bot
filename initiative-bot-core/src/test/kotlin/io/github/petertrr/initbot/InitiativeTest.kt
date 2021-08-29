@@ -1,7 +1,10 @@
 package io.github.petertrr.initbot
 
 import io.github.petertrr.initbot.entities.Combatant
+import io.github.petertrr.initbot.sorting.CombatantsSorter
+import io.github.petertrr.initbot.sorting.DescendantSorter
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
@@ -12,24 +15,30 @@ import kotlin.random.Random
 @ExtendWith(MockitoExtension::class)
 class InitiativeTest {
     @Mock lateinit var random: Random
+    private lateinit var sorter: CombatantsSorter
+
+    @BeforeEach
+    fun setUp() {
+        sorter = DescendantSorter(random)
+    }
 
     @Test
     fun `default initiative flow`() {
         Mockito.`when`(random.nextInt(1, 20))
-            .thenReturn(1, 3, 5)
-        val initiative = Initiative(random = random)
+            .thenReturn(5, 3, 5)
+        val initiative = Initiative(sorter = sorter, random = random)
         val defaultName = "Fallback"
 
         initiative.executeCommands(
             defaultName = defaultName,
             "start",
-            "add 0 Tom",
             "add 0 Jerry",
+            "add -2 Tom",
             "add 0 Tuffy",
         )
 
         Assertions.assertIterableEquals(
-            listOf(Combatant("Tom", 0), Combatant("Jerry", 0), Combatant("Tuffy", 0)),
+            listOf(Combatant("Jerry", 0), Combatant("Tom", -2), Combatant("Tuffy", 0)),
             initiative.members
         )
 
@@ -37,15 +46,15 @@ class InitiativeTest {
         initiative.executeCommands(
             defaultName = defaultName,
             "roll 0 Tom",
-            "roll +2 Jerry",
+            "roll +0 Jerry",
             "roll 2 Tuffy",
         )
 
         Assertions.assertIterableEquals(
             listOf(
                 Combatant("Tuffy", 0, 7),
-                Combatant("Jerry", 0, 5),
-                Combatant("Tom", 0, 1),
+                Combatant("Jerry", 0, 3),
+                Combatant("Tom", -2, 3),
             ),
             (initiative.round() as RoundResult).combatants.asIterable()
         )
@@ -83,7 +92,7 @@ class InitiativeTest {
     fun `test with 6 members and removing before round`() {
         Mockito.`when`(random.nextInt(1, 20))
             .thenReturn(17, 14, 10, 10, 15, 7)
-        val initiative = Initiative(random = random)
+        val initiative = Initiative(sorter = sorter, random = random)
         initiative.executeCommands(
             defaultName = "Fallback",
             "start",
@@ -132,7 +141,7 @@ class InitiativeTest {
     fun `test`() {
         Mockito.`when`(random.nextInt(1, 20))
             .thenReturn(17, 14, 10, 10, 15, 7)
-        val initiative = Initiative(random = random)
+        val initiative = Initiative(sorter = sorter, random = random)
         initiative.executeCommands(
             defaultName = "Fallback",
             "start",
@@ -170,7 +179,7 @@ class InitiativeTest {
     @Test
     fun `should fail if end is requested before start`() {
         Assertions.assertThrows(IllegalStateException::class.java) {
-            val initiative = Initiative(random = random)
+            val initiative = Initiative(sorter = sorter, random = random)
             val defaultName = "Fallback"
             initiative.executeCommands(defaultName, "end")
         }
@@ -179,7 +188,7 @@ class InitiativeTest {
     @Test
     fun `should fail if start is called multiple times`() {
         Assertions.assertThrows(IllegalStateException::class.java) {
-            val initiative = Initiative(random = random)
+            val initiative = Initiative(sorter = sorter, random = random)
             val defaultName = "Fallback"
             initiative.executeCommands(defaultName, "start", "start")
         }
