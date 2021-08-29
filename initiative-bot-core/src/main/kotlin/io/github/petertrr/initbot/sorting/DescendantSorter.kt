@@ -4,7 +4,7 @@ import io.github.petertrr.initbot.entities.Combatant
 import kotlin.random.Random
 import kotlin.random.nextInt
 
-class DescendantSorter(private val random: Random) : CombatantsSorter {
+class DescendantSorter(private val random: Random = Random.Default) : CombatantsSorter {
     override fun sort(combatants: MutableList<Combatant>) {
         combatants.sortWith { a, b ->
             (b.getCurrentInitiativeSafe() - a.getCurrentInitiativeSafe()).let { initDiff ->

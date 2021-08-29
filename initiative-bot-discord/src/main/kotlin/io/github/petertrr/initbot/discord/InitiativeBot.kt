@@ -9,6 +9,7 @@ import discord4j.rest.util.AllowedMentions
 import io.github.petertrr.initbot.*
 import io.github.petertrr.initbot.discord.entities.BotConfiguration
 import io.github.petertrr.initbot.discord.entities.UserState
+import io.github.petertrr.initbot.sorting.DescendantSorter
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.mono
@@ -44,7 +45,10 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
     private fun initializeInitiativeIfAbsent(channelId: String) {
         initiatives.computeIfAbsent(channelId) {
             logger.info("Creating new Initiative for channel $it")
-            Initiative(turnDurationSeconds = botConfiguration.turnDurationSeconds)
+            Initiative(
+                sorter = DescendantSorter(),
+                turnDurationSeconds = botConfiguration.turnDurationSeconds
+            )
         }
         userNameByCharacterNameByChannel.computeIfAbsent(channelId) {
             mutableMapOf()
