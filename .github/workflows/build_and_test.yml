@@ -23,9 +23,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.gradle/configuration-cache
-          key: ${{ runner.os }}-gradle-conf-cache
+          key: ${{ runner.os }}-gradle-conf-cache-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-conf-cache
+            ${{ runner.os }}-gradle-conf-cache-
       - uses: burrunan/gradle-cache-action@v1
         name: Gradle build with caches caching
         with:
