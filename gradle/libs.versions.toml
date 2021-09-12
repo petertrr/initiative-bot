@@ -1,8 +1,8 @@
 [versions]
 kotlin = "1.5.30"
-kotlinx-coroutines = "1.5.1"
+kotlinx-coroutines = "1.5.2"
 junit = "5.7.2"
-mockito = "3.11.2"
+mockito = "3.12.4"
 discord4j = "3.1.5"
 reactor = "1.1.4"
 slf4j = "1.7.30"

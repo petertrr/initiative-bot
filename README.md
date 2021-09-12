@@ -1,4 +1,8 @@
 # Initiative-bot
+[![codecov](https://codecov.io/gh/petertrr/initiative-bot/branch/main/graph/badge.svg)](https://codecov.io/gh/petertrr/initiative-bot)
+[![License](https://img.shields.io/github/license/petertrr/initiative-bot)](https://github.com/petertrr/initiative-bot/blob/main/LICENSE)
+[![build](https://github.com/petertrr/initiative-bot/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/petertrr/initiative-bot/actions)
+
 A simple bot for Discord, that can track initiative in D&D and similar TTRPGs, based on alternative systems - such as 
 Speed Factor from DMG (currently supported) or Greyhawk initiative from Unearthed Arcana (TBD). 
 
