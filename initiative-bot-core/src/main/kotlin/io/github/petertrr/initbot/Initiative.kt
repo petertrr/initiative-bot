@@ -53,7 +53,7 @@ class Initiative(
     internal fun end() =
         if (isInitiativeStarted.compareAndSet(true, false)) {
             members.clear()
-            Success("Initiative ended")
+            EndSuccess
         } else {
             Failure(IllegalStateException("Initiative is not started, call `start` first"))
         }
