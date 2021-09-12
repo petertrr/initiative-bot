@@ -26,3 +26,7 @@ data class RoundResult(
     val roundIdx: Int,
     val combatants: Sequence<Combatant>
 ) : CommandResult()
+
+object EndSuccess: CommandResult() {
+    const val message = "Initiative ended"
+}

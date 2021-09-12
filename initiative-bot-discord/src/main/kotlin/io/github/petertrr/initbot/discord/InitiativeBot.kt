@@ -79,7 +79,7 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
         val author = message.author.get()
         val rawCommand = message.content.dropWhile { it in botConfiguration.prefix }.trim()
         val initiative = initiatives[channelId.asString()]!!
-        logger.info("Received message `${message.content}`, will run command `$rawCommand`")
+        logger.info { "Received message `${message.content}` from `${author.username}`, will run command `$rawCommand`" }
 
         val result = try {
             val fallbackName = getCharacterNameFor(author, channelId.asString())
@@ -124,6 +124,10 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
                 }
             }
             is RoundResult -> formatRoundMessage(result, channelId.asString())
+            is EndSuccess -> {
+                cleanup(channelId.asString())
+                result.message
+            }
         }
 
         return message.channel.flatMap { messageChannel ->
@@ -170,5 +174,12 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
                     combatant.name + ".".repeat(longestLineLength - combatant.name.length) + combatant.currentInitiative +
                             " ... owner ${owner.mention}"
                 }
+    }
+
+    private fun cleanup(channelId: String) {
+        logger.info { "Removing initiative for channel $channelId" }
+        initiatives.remove(channelId)
+        logger.info { "Clearing users' character names for channel $channelId" }
+        userNameByCharacterNameByChannel[channelId]!!.clear()
     }
 }
