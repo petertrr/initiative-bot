@@ -24,7 +24,7 @@ class Initiative(
         val command = try {
             Command.parse(rawCommand, fallbackName, turnDurationSeconds)
         } catch (ex: Exception) {
-            return Failure(ex)
+            return Failure(ex, rawCommand)
         }
         return when (command) {
             Help -> help()
@@ -36,6 +36,9 @@ class Initiative(
             is Countdown -> startCountdown(command)
             Round -> round()
             EndRound -> endRound()
+        }.let {
+            if (it is Failure) it.copy(rawCommand = rawCommand)
+            else it
         }
     }
 
