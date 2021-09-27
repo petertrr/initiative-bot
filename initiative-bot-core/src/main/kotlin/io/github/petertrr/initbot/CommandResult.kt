@@ -3,7 +3,7 @@ package io.github.petertrr.initbot
 import io.github.petertrr.initbot.entities.Combatant
 
 sealed class CommandResult {
-    open val message: String = TODO("Message not implemented for ${this::class}")
+    open val message: String = "Message not implemented for ${this::class}"
 }
 
 data class Success(override val message: String) : CommandResult()
