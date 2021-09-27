@@ -9,6 +9,6 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("gradle-plugin", "1.5.30"))
+    implementation(kotlin("gradle-plugin", libs.versions.kotlin.get()))
     implementation("com.github.ajoberstar.reckon:reckon-gradle:PR160-SNAPSHOT")
 }

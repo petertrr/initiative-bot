@@ -10,7 +10,7 @@ plugins {
 
 dependencies {
     testImplementation(kotlin("test-junit5"))
-    val junit = "5.7.2"
+    val junit = "5.8.1"
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit")
 }

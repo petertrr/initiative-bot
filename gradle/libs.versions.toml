@@ -1,9 +1,9 @@
 [versions]
-kotlin = "1.5.30"
+kotlin = "1.5.31"
 kotlinx-coroutines = "1.5.2"
-junit = "5.7.2"
+junit = "5.8.1"
 mockito = "3.12.4"
-discord4j = "3.1.5"
+discord4j = "3.1.8"
 reactor = "1.1.4"
 slf4j = "1.7.30"
 logback = "1.2.3"
@@ -16,6 +16,8 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "kotlinx-coroutines" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
 microutils-logging = { module = "io.github.microutils:kotlin-logging", version = "2.0.11" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions", version.ref = "reactor" }
