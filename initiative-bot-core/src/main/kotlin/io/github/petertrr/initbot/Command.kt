@@ -1,5 +1,6 @@
 package io.github.petertrr.initbot
 
+import io.github.petertrr.initbot.entities.InitiativeMode
 import java.lang.IllegalArgumentException
 
 sealed class Command(command: String) {
@@ -7,7 +8,7 @@ sealed class Command(command: String) {
         fun parse(rawCommand: String, defaultName: String = "Fallback", defaultRoundSeconds: Long): Command {
             val parts = rawCommand.split(" ")
             return when (parts.first().lowercase()) {
-                "start" -> Start
+                "start" -> Start(parts.getOrNull(1)?.let(InitiativeMode::valueOf) ?: InitiativeMode.REGULAR)
                 "end" -> End
                 "add" -> Add(parts.getOrElse(2) { defaultName }, parts[1].toInt())
                 "remove" -> Remove(parts.getOrElse(1) { defaultName })
@@ -24,7 +25,7 @@ sealed class Command(command: String) {
 
 object Help : Command("help")
 
-object Start : Command("start")
+data class Start(val mode: InitiativeMode) : Command("start")
 
 object End : Command("end")
 

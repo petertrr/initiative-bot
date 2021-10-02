@@ -1,22 +1,27 @@
-package io.github.petertrr.initbot
+package io.github.petertrr.initbot.initiative
 
+import io.github.petertrr.initbot.*
 import io.github.petertrr.initbot.entities.Combatant
+import io.github.petertrr.initbot.entities.InitiativeMode
+import io.github.petertrr.initbot.entities.InitiativeMode.REGULAR
+import io.github.petertrr.initbot.entities.InitiativeMode.SPEED_FACTOR
 import io.github.petertrr.initbot.sorting.CombatantsSorter
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
-class Initiative(
-    internal val members: MutableList<Combatant> = Collections.synchronizedList(mutableListOf()),
+abstract class Initiative(
+    private val mode: InitiativeMode,
     private val sorter: CombatantsSorter,
+    internal val members: MutableList<Combatant> = Collections.synchronizedList(mutableListOf()),
     private val random: Random = Random.Default,
     private val turnDurationSeconds: Long = 45L
 ) {
     private val isInitiativeStarted = AtomicBoolean(false)
     internal val isRoundStarted = AtomicBoolean(false)
     private val currentCombatantIdx = AtomicInteger(0)
-    private val currentRound = AtomicInteger(0)
+    protected val currentRound = AtomicInteger(0)
 
     fun hasNextCombatant(): Boolean = currentCombatantIdx.get() <= members.lastIndex
 
@@ -28,7 +33,7 @@ class Initiative(
         }
         return when (command) {
             Help -> help()
-            Start -> start()
+            is Start -> start()
             End -> end()
             is Add -> add(command)
             is Remove -> removeByName(command.name)
@@ -48,7 +53,7 @@ class Initiative(
     internal fun start() =
         if (isInitiativeStarted.compareAndSet(false, true)) {
             members.clear()
-            Success("Successfully started initiative, combatants should call `add` now")
+            Success("Successfully started initiative with mode $mode, combatants should call `add` now")
         } else {
             Failure(IllegalStateException("Initiative already started, call `end` first"))
         }
@@ -88,10 +93,10 @@ class Initiative(
         if (!isRoundStarted.compareAndSet(false, true)) {
             Failure(IllegalStateException("Round is already in progress, next combatant is ${members[currentCombatantIdx.get()].name}. To finish round, call `next` for all participants and then `end-round` before starting the new one"))
         } else {
-            currentCombatantIdx.set(0)
-            currentRound.incrementAndGet()
             // sort members *in place*
             sorter.sort(members)
+            currentCombatantIdx.set(0)
+            currentRound.incrementAndGet()
             RoundResult(currentRound.get(), members.asSequence())
         }
     }
@@ -109,26 +114,7 @@ class Initiative(
     /**
      * Ends round, clearing all initiatives
      */
-    internal fun endRound() = withRollbackAtomic(isRoundStarted) {
-        if (isRoundStarted.compareAndSet(true, false)) {
-            members.forEach {
-                it.currentInitiative = null
-            }
-            Success(
-                """|Round ended, combatants can roll new initiative now.
-                   |Choose your action and bonus action, apply modifiers (only once, if both have same nature):
-                   |- Spellcasting: subtract spell level
-                   |- Melee, heavy weapon: -2
-                   |- Melee, light or finesse weapon: +2
-                   |- Melee, two-handed: -2
-                   |- Ranged, loading: -5
-                   |If you are not Medium-sized, apply the appropriate size modifier.
-                """.trimMargin()
-            )
-        } else {
-            Failure(IllegalStateException("Round is not started, call `round` first"))
-        }
-    }
+    internal abstract fun endRound(): CommandResult
 
     internal fun removeByName(name: String) =
         if (members.removeIf { it.name == name }) {
@@ -137,13 +123,21 @@ class Initiative(
             Failure(IllegalStateException("Character $name is not present in the initiative"))
         }
 
-    private fun <T : CommandResult> withRollbackAtomic(a: AtomicBoolean, op: () -> T): CommandResult {
+    protected fun <T : CommandResult> withRollbackAtomic(a: AtomicBoolean, op: () -> T): CommandResult {
         val oldValue = a.get()
         return try {
             op()
         } catch (t: Throwable) {
             a.set(oldValue)
             Failure(t)
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        fun create(mode: InitiativeMode, turnDurationSeconds: Long) = when (mode) {
+            SPEED_FACTOR -> SpeedFactorInitiative(turnDurationSeconds)
+            REGULAR -> RegularInitiative(turnDurationSeconds)
         }
     }
 }

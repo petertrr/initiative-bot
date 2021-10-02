@@ -11,7 +11,8 @@ import io.github.petertrr.initbot.*
 import io.github.petertrr.initbot.discord.entities.BotConfiguration
 import io.github.petertrr.initbot.discord.entities.ChannelState
 import io.github.petertrr.initbot.discord.entities.ResponseContext
-import io.github.petertrr.initbot.sorting.DescendantSorter
+import io.github.petertrr.initbot.entities.InitiativeMode
+import io.github.petertrr.initbot.initiative.Initiative
 import mu.KotlinLogging
 import reactor.core.Disposable
 import reactor.core.publisher.Flux
@@ -34,21 +35,14 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
             gatewayDiscordClient.on(MessageCreateEvent::class.java)
                 .filter { it.message.content.startsWith(botConfiguration.prefix) }
                 .flatMap {
-                    initializeInitiativeIfAbsent(it.message.channelId)
+                    initializeChannelIfAbsent(it.message.channelId)
                     handleMessageCreateEvent(it)
                 }
         }
             .block()
     }
 
-    private fun initializeInitiativeIfAbsent(channelId: Snowflake) {
-        initiatives.computeIfAbsent(channelId) {
-            logger.info { "Creating new Initiative for channel $it" }
-            Initiative(
-                sorter = DescendantSorter(),
-                turnDurationSeconds = botConfiguration.turnDurationSeconds
-            )
-        }
+    private fun initializeChannelIfAbsent(channelId: Snowflake) {
         channelStates.computeIfAbsent(channelId) {
             ChannelState(channelId)
         }
@@ -88,7 +82,16 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
         val channelId = message.channelId
         val author = message.author.get()
         val rawCommand = message.content.dropWhile { it in botConfiguration.prefix }.trim()
-        val initiative = initiatives[channelId]!!
+        val initiative = initiatives.computeIfAbsent(channelId) {
+            // Command parsing is hardcoded for creation only.
+            // TODO: handle exceptions here.
+            val requestedMode = rawCommand.substringAfter("start").trim().let(InitiativeMode::valueOf)
+            logger.info { "Creating new Initiative with mode $requestedMode for channel $it" }
+            Initiative.create(
+                requestedMode,
+                botConfiguration.turnDurationSeconds,
+            )
+        }
         val channelState = channelStates[channelId]!!
         val responseProcessor = responseProcessors[channelId]!!
         logger.info { "Received message `${message.content}` from `${author.username}`, will run command `$rawCommand`" }

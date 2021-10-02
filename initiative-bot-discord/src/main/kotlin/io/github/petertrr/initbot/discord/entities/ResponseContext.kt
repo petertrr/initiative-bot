@@ -1,7 +1,7 @@
 package io.github.petertrr.initbot.discord.entities
 
 import discord4j.core.`object`.entity.User
-import io.github.petertrr.initbot.Initiative
+import io.github.petertrr.initbot.initiative.Initiative
 
 /**
  * @property author the user who initiated message, to which we are currently responding

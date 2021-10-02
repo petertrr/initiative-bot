@@ -1,7 +1,7 @@
 package io.github.petertrr.initbot.discord
 
-import io.github.petertrr.initbot.Initiative
 import io.github.petertrr.initbot.discord.entities.ChannelState
+import io.github.petertrr.initbot.initiative.Initiative
 import reactor.core.Disposable
 
 class ChannelProcessor(
