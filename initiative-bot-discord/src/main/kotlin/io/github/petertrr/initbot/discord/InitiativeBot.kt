@@ -32,6 +32,11 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
 
         client.withGateway { gatewayDiscordClient ->
             gatewayDiscordClient.on(MessageCreateEvent::class.java)
+                    .doOnNext {
+                        if (it.message.content in listOf("!i n", "!init n", "!i next", "!init next")) {
+                            maybeDisposeAndStartCountdown(it.message, botConfiguration.turnDurationSeconds)
+                        }
+                    }
                 .filter { it.message.content.startsWith(botConfiguration.prefix) }
                 .flatMap {
                     initializeInitiativeIfAbsent(it.message.channelId)
@@ -107,11 +112,7 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
         )
 
         if (result is CountdownStarted) {
-            if (::countdownSubscription.isInitialized && !countdownSubscription.isDisposed) {
-                logger.info { "Disposing countdown subscription, because it's the next combatant's turn" }
-                countdownSubscription.dispose()
-            }
-            countdownSubscription = message.channel.startCountdown(result.period).subscribe()
+            maybeDisposeAndStartCountdown(message, result.period)
         }
 
         return message.channel.flatMap { messageChannel ->
@@ -134,20 +135,31 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
             }
     }
 
+    private fun maybeDisposeAndStartCountdown(message: Message, period: Long) {
+        if (::countdownSubscription.isInitialized && !countdownSubscription.isDisposed) {
+            logger.info { "Disposing countdown subscription, because it's the next combatant's turn" }
+            countdownSubscription.dispose()
+        }
+        countdownSubscription = message.channel.startCountdown(period).subscribe()
+    }
+
     private fun Mono<MessageChannel>.startCountdown(seconds: Long): Flux<Message> {
         if (::countdownSubscription.isInitialized && !countdownSubscription.isDisposed) {
             logger.info("Canceling the previous countdown")
             countdownSubscription.dispose()
         }
         return this.flatMapMany { messageChannel ->
-            val numIntervals = seconds / botConfiguration.turnDurationSeconds
-            Flux.interval(Duration.ofSeconds(botConfiguration.turnDurationSeconds))
-                .delaySubscription(Duration.ofSeconds(botConfiguration.turnDurationSeconds))
+            val numIntervals = seconds / botConfiguration.turnUpdateSeconds
+            if (numIntervals < 2) {
+                logger.warn { "numIntervals=$seconds/${botConfiguration.turnUpdateSeconds}=$numIntervals, probably something wrong with config" }
+            }
+            Flux.interval(Duration.ofSeconds(botConfiguration.turnUpdateSeconds))
+                .delaySubscription(Duration.ofSeconds(botConfiguration.turnUpdateSeconds))
                 .take(numIntervals)
                 .flatMap { i ->
                     messageChannel.createMessage {
                         if (i + 1 < numIntervals) {
-                            it.setContent("${(numIntervals - i - 1) * botConfiguration.turnDurationSeconds} seconds left!")
+                            it.setContent("${(numIntervals - i - 1) * botConfiguration.turnUpdateSeconds} seconds left!")
                         } else {
                             it.setContent("Time is up!")
                         }
