@@ -2,10 +2,13 @@ package io.github.petertrr.initbot.discord
 
 import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
+import discord4j.core.`object`.command.ApplicationCommandOption
 import discord4j.core.`object`.entity.Message
 import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.MessageChannel
 import discord4j.core.event.domain.message.MessageCreateEvent
+import discord4j.discordjson.json.ApplicationCommandOptionData
+import discord4j.discordjson.json.ApplicationCommandRequest
 import discord4j.rest.util.AllowedMentions
 import io.github.petertrr.initbot.*
 import io.github.petertrr.initbot.discord.entities.BotConfiguration
@@ -31,6 +34,23 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
         client = DiscordClient.create(args.first())
 
         client.withGateway { gatewayDiscordClient ->
+            val restClient = gatewayDiscordClient.restClient
+            val appId = restClient.applicationId.block()
+            val cmd = ApplicationCommandRequest.builder()
+                .name("roll")
+                .description("Roll for initiative")
+//                .addOption(ApplicationCommandOptionData.builder()
+//                    .name("Modifier")
+//                    .description("Initiative modifier")
+//                    .type(ApplicationCommandOption.Type.INTEGER.value)
+//                    .required(false)
+//                    .build()
+//                )
+                .build()
+            restClient.applicationService
+                .createGuildApplicationCommand(appId!!, 839420977079255081L, cmd)
+                .block()
+
             gatewayDiscordClient.on(MessageCreateEvent::class.java)
                 .filter { it.message.content.startsWith(botConfiguration.prefix) }
                 .flatMap {
