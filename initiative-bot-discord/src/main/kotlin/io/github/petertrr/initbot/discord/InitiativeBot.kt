@@ -140,14 +140,15 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
             countdownSubscription.dispose()
         }
         return this.flatMapMany { messageChannel ->
-            val numIntervals = seconds / botConfiguration.turnDurationSeconds
-            Flux.interval(Duration.ofSeconds(botConfiguration.turnDurationSeconds))
-                .delaySubscription(Duration.ofSeconds(botConfiguration.turnDurationSeconds))
+            val updatePeriod = botConfiguration.turnUpdateSeconds
+            val numIntervals = seconds / updatePeriod
+            Flux.interval(Duration.ofSeconds(updatePeriod))
+                .delaySubscription(Duration.ofSeconds(updatePeriod))
                 .take(numIntervals)
                 .flatMap { i ->
                     messageChannel.createMessage {
                         if (i + 1 < numIntervals) {
-                            it.setContent("${(numIntervals - i - 1) * botConfiguration.turnDurationSeconds} seconds left!")
+                            it.setContent("${(numIntervals - i - 1) * updatePeriod} seconds left!")
                         } else {
                             it.setContent("Time is up!")
                         }
