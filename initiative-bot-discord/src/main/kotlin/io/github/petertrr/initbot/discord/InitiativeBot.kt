@@ -34,6 +34,7 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
             gatewayDiscordClient.on(MessageCreateEvent::class.java)
                     .doOnNext {
                         if (it.message.content in listOf("!i n", "!init n", "!i next", "!init next")) {
+                            logger.info { "Starting a countdown, because command `${it.message.content}` has been issued" }
                             maybeDisposeAndStartCountdown(it.message, botConfiguration.turnDurationSeconds)
                         }
                     }
