@@ -32,6 +32,8 @@ jobs:
           arguments: build
           remote-build-cache-proxy-port: 3696
           gradle-version: wrapper
+          multi-cache-enabled: false
+          write-init-script: false
       - name: Upload test reports
         if: ${{ failure() }}  # runs only if previous step has failed, the entire workflow will still be marked as failed
         uses: actions/upload-artifact@v2
