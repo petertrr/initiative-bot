@@ -33,6 +33,7 @@ docker {
 }
 
 tasks.register<Exec>("runDockerBuildx") {
+    dependsOn("dockerCreateDockerfile")
     workingDir("$buildDir/docker")
     val imageVersion = rootProject.version.toString().replace('+', '-')
     commandLine(
@@ -43,6 +44,7 @@ tasks.register<Exec>("runDockerBuildx") {
         "linux/amd64,linux/arm64,linux/arm/v7",
         "--tag",
         "ghcr.io/petertrr/initiative-bot-discord:$imageVersion",
+        "--push",
         "."
     )
 }
