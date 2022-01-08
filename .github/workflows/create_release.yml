@@ -25,11 +25,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-conf-cache-
       - uses: burrunan/gradle-cache-action@v1
-        env:
-          GHCR_PWD: ${{ secrets.GITHUB_TOKEN }}
         name: Gradle build with caches caching
         with:
-          arguments: :initiative-bot-discord:distZip :initiative-bot-discord:dockerPushImage
+          arguments: :initiative-bot-discord:distZip
           gradle-version: wrapper
       - name: Create Github Release
         uses: actions/create-release@v1

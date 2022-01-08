@@ -23,19 +23,26 @@ application {
 }
 
 docker {
-    registryCredentials {
-        url.set("https://ghcr.io")
-        username.set("petertrr")
-        password.set(System.getenv("GHCR_PWD"))
-    }
-
     javaApplication {
         mainClassName.set("io.github.petertrr.initbot.discord.MainKt")
-        baseImage.set("openjdk:17-slim")
+        baseImage.set("eclipse-temurin:17-jre")
         maintainer.set("petertrr")
         ports.set(emptyList())
-        val imageVersion = rootProject.version.toString().replace('+', '-')
-        images.set(setOf("ghcr.io/petertrr/initiative-bot-discord:$imageVersion"))
         jvmArgs.set(listOf("-Xmx256m"))
     }
+}
+
+tasks.register<Exec>("runDockerBuildx") {
+    workingDir("$buildDir/docker")
+    val imageVersion = rootProject.version.toString().replace('+', '-')
+    commandLine(
+        "docker",
+        "buildx",
+        "build",
+        "--platform",
+        "linux/amd64,linux/arm64,linux/arm/v7",
+        "--tag",
+        "ghcr.io/petertrr/initiative-bot-discord:$imageVersion",
+        "."
+    )
 }
