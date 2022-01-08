@@ -1,3 +1,7 @@
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+import java.nio.file.Paths
+
 plugins {
     `common-kotlin-jvm-configuration`
     application
@@ -16,35 +20,38 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 }
 
-val applicationName = "${project.name}-${project.version}"
 application {
     mainClass.set("io.github.petertrr.initbot.discord.MainKt")
-    this.applicationName = applicationName
+    applicationName = "${project.name}-${project.version}"
 }
 
-tasks.register<Copy>("generateDockerfile") {
+tasks.register<Copy>("prepareDockerWorkspace") {
+    val applicationName = "${project.name}-${project.version}"
+    val installDistPath = Paths.get("$buildDir/install/$applicationName")
+    val dockerfile = Paths.get("$buildDir/docker/Dockerfile")
+
     dependsOn("installDist")
-    doFirst {
-        mkdir("$buildDir/docker")
-    }
-    from("$buildDir/install/$applicationName")
-    into("$buildDir/docker")
+    from(installDistPath)
+    into("$buildDir/docker/workspace")
     doLast {
-        file("$buildDir/install/$applicationName/Dockerfile").writeText(
+        if (!Files.exists(dockerfile)) Files.createFile(dockerfile)
+        dockerfile.toFile().writeText(
             """
                 FROM eclipse-temurin:17-jre
-                WORKDIR /app
-                COPY bin bin/
-                COPY lib lib/
-                ENTRYPOINT ["/workspace/bin/"]
+                WORKDIR /workspace
+                COPY workspace/bin bin/
+                COPY workspace/lib lib/
+                ENTRYPOINT ["/workspace/bin/$applicationName"]
             """.trimIndent()
         )
     }
 }
 
 tasks.register<Exec>("runDockerBuildx") {
-    dependsOn("generateDockerfile")
-    workingDir("$buildDir/docker")
+    val buildDirPath = "${buildDir.absolutePath}"
+
+    dependsOn("prepareDockerWorkspace")
+    workingDir("$buildDirPath/docker")
     val imageVersion = rootProject.version.toString().replace('+', '-')
     commandLine(
         "docker",
@@ -54,6 +61,8 @@ tasks.register<Exec>("runDockerBuildx") {
         "linux/amd64,linux/arm64,linux/arm/v7",
         "--tag",
         "ghcr.io/petertrr/initiative-bot-discord:$imageVersion",
+        "--tag",
+        "ghcr.io/petertrr/initiative-bot-discord:latest",
         "--push",
         "."
     )
