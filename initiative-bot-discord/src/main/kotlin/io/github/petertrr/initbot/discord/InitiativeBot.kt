@@ -28,7 +28,8 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
     private lateinit var countdownSubscription: Disposable
 
     fun start(args: List<String>) {
-        client = DiscordClient.create(args.first())
+        val token = args.firstOrNull() ?: System.getenv("DISCORD_TOKEN")
+        client = DiscordClient.create(token)
 
         client.withGateway { gatewayDiscordClient ->
             gatewayDiscordClient.on(MessageCreateEvent::class.java)
