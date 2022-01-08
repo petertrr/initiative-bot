@@ -37,5 +37,5 @@ jobs:
       - uses: burrunan/gradle-cache-action@v1
         name: Gradle build with caches caching
         with:
-          arguments: :initiative-bot-discord:dockerCreateDockerfile :initiative-bot-discord:runDockerBuildx
+          arguments: :initiative-bot-discord:runDockerBuildx
           gradle-version: wrapper

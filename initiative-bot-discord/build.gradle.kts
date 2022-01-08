@@ -2,7 +2,6 @@ plugins {
     `common-kotlin-jvm-configuration`
     application
     `code-coverage`
-    alias(libs.plugins.docker.java.application)
 }
 
 dependencies {
@@ -17,23 +16,34 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
 }
 
+val applicationName = "${project.name}-${project.version}"
 application {
     mainClass.set("io.github.petertrr.initbot.discord.MainKt")
-    applicationName = "${project.name}-${project.version}"
+    this.applicationName = applicationName
 }
 
-docker {
-    javaApplication {
-        mainClassName.set("io.github.petertrr.initbot.discord.MainKt")
-        baseImage.set("eclipse-temurin:17-jre")
-        maintainer.set("petertrr")
-        ports.set(emptyList())
-        jvmArgs.set(listOf("-Xmx256m"))
+tasks.register<Copy>("generateDockerfile") {
+    dependsOn("installDist")
+    doFirst {
+        mkdir("$buildDir/docker")
+    }
+    from("$buildDir/install/$applicationName")
+    into("$buildDir/docker")
+    doLast {
+        file("$buildDir/install/$applicationName/Dockerfile").writeText(
+            """
+                FROM eclipse-temurin:17-jre
+                WORKDIR /app
+                COPY bin bin/
+                COPY lib lib/
+                ENTRYPOINT ["/workspace/bin/"]
+            """.trimIndent()
+        )
     }
 }
 
 tasks.register<Exec>("runDockerBuildx") {
-    dependsOn("dockerCreateDockerfile")
+    dependsOn("generateDockerfile")
     workingDir("$buildDir/docker")
     val imageVersion = rootProject.version.toString().replace('+', '-')
     commandLine(
