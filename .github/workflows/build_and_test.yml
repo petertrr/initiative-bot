@@ -26,6 +26,13 @@ jobs:
           key: ${{ runner.os }}-gradle-conf-cache-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: |
             ${{ runner.os }}-gradle-conf-cache-
+      - name: Cache generated sources from buildSrc
+        uses: actions/cache@v2
+        with:
+          path: buildSrc/build/generated-sources
+          key: ${{ runner.os }}-gradle-conf-cache-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-conf-cache-
       - uses: petertrr/gradle-cache-action@v1.11-fork
         name: Gradle build with caches caching
         env:
