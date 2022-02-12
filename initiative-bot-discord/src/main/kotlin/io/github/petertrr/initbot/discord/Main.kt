@@ -8,8 +8,8 @@ import kotlin.system.exitProcess
 private val logger = KotlinLogging.logger {}
 
 fun main(vararg args: String) {
-    if (args.isEmpty()) {
-        logger.error { "Incorrect usage: use `initiative-bot-discord <token>`" }
+    if (args.isEmpty() && System.getenv("DISCORD_TOKEN") == null) {
+        logger.error { "Incorrect usage: use `initiative-bot-discord <token>` or set env variable `DISCORD_TOKEN`" }
         exitProcess(-1)
     }
     val properties = Properties().apply {

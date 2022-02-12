@@ -6,6 +6,7 @@ import discord4j.core.`object`.entity.Message
 import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.MessageChannel
 import discord4j.core.event.domain.message.MessageCreateEvent
+import discord4j.core.spec.MessageCreateSpec
 import discord4j.rest.util.AllowedMentions
 import io.github.petertrr.initbot.*
 import io.github.petertrr.initbot.discord.entities.BotConfiguration
@@ -28,7 +29,8 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
     private lateinit var countdownSubscription: Disposable
 
     fun start(args: List<String>) {
-        client = DiscordClient.create(args.first())
+        val token = args.firstOrNull() ?: System.getenv("DISCORD_TOKEN")
+        client = DiscordClient.create(token)
 
         client.withGateway { gatewayDiscordClient ->
             gatewayDiscordClient.on(MessageCreateEvent::class.java)
@@ -117,10 +119,11 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
         }
 
         return message.channel.flatMap { messageChannel ->
-            messageChannel.createMessage {
-                it.setAllowedMentions(AllowedMentions.builder().allowUser(author.id).build())
-                it.setContent(response)
-            }
+            messageChannel.createMessage(MessageCreateSpec.builder()
+                .allowedMentions(AllowedMentions.builder().allowUser(author.id).build())
+                .content(response)
+                .build()
+            )
         }
     }
 
@@ -150,21 +153,24 @@ class InitiativeBot(private val botConfiguration: BotConfiguration) {
             countdownSubscription.dispose()
         }
         return this.flatMapMany { messageChannel ->
-            val numIntervals = seconds / botConfiguration.turnUpdateSeconds
+            val updatePeriod = botConfiguration.turnUpdateSeconds
+            val numIntervals = seconds / updatePeriod
             if (numIntervals < 2) {
                 logger.warn { "numIntervals=$seconds/${botConfiguration.turnUpdateSeconds}=$numIntervals, probably something wrong with config" }
             }
-            Flux.interval(Duration.ofSeconds(botConfiguration.turnUpdateSeconds))
-                .delaySubscription(Duration.ofSeconds(botConfiguration.turnUpdateSeconds))
+            Flux.interval(Duration.ofSeconds(updatePeriod))
+                .delaySubscription(Duration.ofSeconds(updatePeriod))
                 .take(numIntervals)
                 .flatMap { i ->
-                    messageChannel.createMessage {
+                    messageChannel.createMessage(MessageCreateSpec.builder().also {
                         if (i + 1 < numIntervals) {
-                            it.setContent("${(numIntervals - i - 1) * botConfiguration.turnUpdateSeconds} seconds left!")
+                            it.content("${(numIntervals - i - 1) * updatePeriod} seconds left!")
                         } else {
-                            it.setContent("Time is up!")
+                            it.content("Time is up!")
                         }
                     }
+                        .build()
+                    )
                 }
         }
             .log()
