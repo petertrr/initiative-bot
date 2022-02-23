@@ -19,15 +19,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - name: Cache gradle configuration
-        uses: actions/cache@v2
-        with:
-          path: .gradle/configuration-cache
-          key: ${{ runner.os }}-gradle-conf-cache-${{ hashFiles('**/*.gradle.kts') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-conf-cache-
-      - uses: burrunan/gradle-cache-action@v1
-        name: Gradle build with caches caching
+      - uses: gradle/gradle-build-action@v2
         with:
           arguments: build
           gradle-version: wrapper
