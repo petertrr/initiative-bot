@@ -1,5 +1,11 @@
 rootProject.name = "initiative-bot"
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include("initiative-bot-core")
 include("initiative-bot-discord")
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+}
