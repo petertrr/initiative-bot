@@ -26,11 +26,23 @@ jobs:
           key: ${{ runner.os }}-gradle-conf-cache-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: |
             ${{ runner.os }}-gradle-conf-cache-
-      - uses: burrunan/gradle-cache-action@v1
+      - name: Cache generated sources from buildSrc
+        uses: actions/cache@v2
+        with:
+          path: buildSrc/build/generated-sources
+          key: ${{ runner.os }}-gradle-conf-cache-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-conf-cache-
+      - uses: petertrr/gradle-cache-action@v1.11-fork
         name: Gradle build with caches caching
+        env:
+          GITHUB_ACTIONS: true
         with:
           arguments: build
+          remote-build-cache-proxy-port: 3696
           gradle-version: wrapper
+          multi-cache-enabled: false
+          write-init-script: false
       - name: Upload test reports
         if: ${{ failure() }}  # runs only if previous step has failed, the entire workflow will still be marked as failed
         uses: actions/upload-artifact@v2
