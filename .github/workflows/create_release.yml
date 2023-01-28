@@ -29,7 +29,7 @@ jobs:
       - uses: burrunan/gradle-cache-action@v1
         name: Gradle build with caches caching
         with:
-          arguments: :initiative-bot-discord:distZip
+          arguments: :initiative-bot-discord:distZip --scan
           gradle-version: wrapper
       - name: Create Github Release
         uses: actions/create-release@v1
